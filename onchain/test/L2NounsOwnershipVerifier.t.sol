@@ -4,51 +4,28 @@ pragma solidity ^0.8.23;
 import {Test, console2} from "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 
-import {L1StateVerifier} from "../src/L1StateVerifier.sol";
+import {StateVerifier} from "../src/StateVerifier.sol";
 import {L2NounsOwnershipVerifier} from "../src/L2NounsOwnershipVerifier.sol";
+import {MerkleTree} from "relic-contracts/lib/MerkleTree.sol";
 
 contract L2NounsOwnershipVerifierTest is Test {
     using stdJson for string;
 
-    bytes32[] stateRootProof = [
-        bytes32(0xd45803d1161182b18ab65f3c398d177db4a6dd6133f0d9790d646e9af2d1b693),
-        bytes32(0xb83c1012e772c28f94da9e2c57bc9aa0d41cc2f3806e944dcdea488b8f81ebf0),
-        bytes32(0xb6d33c6032392bee6c15acbf20aeeac29daf52ebaf8b43414502c866a6707333),
-        bytes32(0x704ce335a9eb89d191c968eca2bd8461a82cb1caa72fb9d34776f3e5a327292b),
-        bytes32(0x536d98837f2dd165a55d5eeae91485954472d56f246df256bf3cae19352a123c),
-        bytes32(0x8256cd98ac2117d244e1a4bb01c731971c6ff65391e8af21c733293c86f16f03),
-        bytes32(0xb46f0c01805fe212e15907981b757e6c496b0cb06664224655613dcec82505bb),
-        bytes32(0xdb56114e00fdd4c1f85c892bf35ac9a89289aaecb1ebd0a96cde606a748b5d71),
-        bytes32(0xe227bc4a965448f7b27de51297e3034f5935b6f8efe970e01f2a1f72b02f06a0),
-        bytes32(0x0000000000000000000000000000000000000000000000000000000000000000),
-        bytes32(0xf5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b),
-        bytes32(0xe825b14568ad784ecb6ee990c5f66e47ea4f05401a6414137ca9e202dfea807b)
-    ];
-    bytes[] storageProof;
-    L2NounsOwnershipVerifier verifier = new L2NounsOwnershipVerifier(); 
-
-    function setUp() public {
-      storageProof.push(hex"f90211a00cd6553c20a1254e5d70f10164dc51759a20e48db326c1bfe00435f593acdb47a09f6f5f6cf7e3123442d91d5e966eb1ffb30bca7e024d6320a90b1a0425a35f85a0c54e2286b99fd92ccf4ac0ced7fd49119a1bce358bb99b28b47d0864ef5141b0a0bb59d8b571d8daa3e803bbf2181f0f91c8ac4c3e89d260dd9ccedc699b3c6a34a0f2b60922ab1fb498b4e8e6499d1eb35765cbea391cdea860a65abe2028355e52a0eba72b8620f5b172adc4801e607c26882636bb38aadb2d924f20606bcf13a0d0a06e98ba1ec09c4239b3be1772bc26af6cc7d80e5c776f3164ca03392a7113f16aa0cb7444c27f5497c5189e46de3f33553ae76fcee69d6cc55bbdbac62d9d2ef7a7a0108d9556e3e26a93124494111648431876e4f9a4cf4e2d34085e5166e12d8f71a0d502aabd4179f764d71b90f293d83be189bbcbcab524f2629fa196ccef244968a0bcfb1f3c004d49c1fd5d7c7ac39b1f4adc4f7251e47128651f73e8dd237d40d7a0d4c8c711d29d38608899981f4a7761e42af46c42a9eb3c23fe912fa40adbdfcfa030c95f4439b90b3fc74693001c29e749b46b74584e2d130dfc55704772ad2c71a06249769f7551220a55f8c3bba321c7b80f40f97eb06e665cd7e7c7e8a3ab3e28a00522e89b84623e312d5b37bbcbb2a0a80d0d9a047c9b9ccdc46aaed945a03ebea007a9288987e253610f8f9c54fdb856b7d9c8b271d57038aee188fb38c6f0f8f880");
-      storageProof.push(hex"f90211a04d5b84f1fd2f7342ea52e096aa71654e8dcafbbbb6cff9c55b88ce5c932d105ca042168176c095853e5f002e8dfd96d730342274a5fd720d03ed08deecdf35e863a01808bedfb984f58ee8bd4553c19e331cf17802dd9635375cbdb952433d4f5a24a01f4566826a7fd5a0fafb72836c2e83f384b5019976b9b382c4afd276149d459fa09824b4041277bdbc8dab6a8d68502d2d5dd9a51eea590d9b8339fe477bcf5fe1a060e4a5346aabb2669c5abfd0c79df3ca986eaf8e6ed49754d0fa046621ff0b58a0a1b748080b3ac0399d3804f51839512eef3c31d977112bfe20365fe41db1876ca0f77c1e5fe152b6cdb4f69208a3b0543c5bbf3a9da8c9b89ac4c84970e8b951c9a051e0a7d51d1e5013d7caf78982aa7bbc6a1418913af90c43335a8505d8392790a08ff7044da47a1d86404b896dae5ff7fb3004559284cea482787c3bfc3a67ac09a08b5a18b6ba369df69b0db23392f9dedb5965334d38e66aeac32054dab2f54da0a0433d52b40e8697f633404fa4f0a3cd109d368a86d56e6dd4687c22d12596b27ea07b942d439017e610a678f76f0768aaf7034a56b1507ad9b476c437452811b5cfa0d368ec393043780fcb6ae63af67dce0232e627f94430cb9db5e7d99a749845a9a041df8ad02c80b7ba10e7b1313f039c6511e47e68dee136b15fd8907985dbca00a075d8f59513c0411a56c3e3dffb27088558953f2a2ccfa97aef8daee81399514c80");
-      storageProof.push(hex"f90211a00cd6553c20a1254e5d70f10164dc51759a20e48db326c1bfe00435f593acdb47a09f6f5f6cf7e3123442d91d5e966eb1ffb30bca7e024d6320a90b1a0425a35f85a0c54e2286b99fd92ccf4ac0ced7fd49119a1bce358bb99b28b47d0864ef5141b0a0bb59d8b571d8daa3e803bbf2181f0f91c8ac4c3e89d260dd9ccedc699b3c6a34a0f2b60922ab1fb498b4e8e6499d1eb35765cbea391cdea860a65abe2028355e52a0eba72b8620f5b172adc4801e607c26882636bb38aadb2d924f20606bcf13a0d0a06e98ba1ec09c4239b3be1772bc26af6cc7d80e5c776f3164ca03392a7113f16aa0cb7444c27f5497c5189e46de3f33553ae76fcee69d6cc55bbdbac62d9d2ef7a7a0108d9556e3e26a93124494111648431876e4f9a4cf4e2d34085e5166e12d8f71a0d502aabd4179f764d71b90f293d83be189bbcbcab524f2629fa196ccef244968a0bcfb1f3c004d49c1fd5d7c7ac39b1f4adc4f7251e47128651f73e8dd237d40d7a0d4c8c711d29d38608899981f4a7761e42af46c42a9eb3c23fe912fa40adbdfcfa030c95f4439b90b3fc74693001c29e749b46b74584e2d130dfc55704772ad2c71a06249769f7551220a55f8c3bba321c7b80f40f97eb06e665cd7e7c7e8a3ab3e28a00522e89b84623e312d5b37bbcbb2a0a80d0d9a047c9b9ccdc46aaed945a03ebea007a9288987e253610f8f9c54fdb856b7d9c8b271d57038aee188fb38c6f0f8f880");
-      storageProof.push(hex"f8b1a0b401aa9e18120aff02ab5316e1aa1362f5e9ae3f8979e501bfa42c493ac48032808080808080808080a04860cf0e58d0c9c825af07b62d360740e76f42908d62d79975b3734bf2a98f9380a0a5a22f534e296a967fce20916f7253c1b20f5966114f8ca9731a92f7b44c1fbe80a07c8b45f4cc4e1c6f8ddf966b488345087af4488f422b0c178c23714b0db076dda00e2798209341c9034d82643b60f181aedd542c967ee315a6bbc6a5bdd5eb400580");
-      storageProof.push(hex"f69f20077b8a7df2f7bf2938f16511d5fdd18caa877a771b301507c24f83fa3c78959444d97d22b3d37d837ce4b22773aad9d1566055d9");
-    }
+    L2NounsOwnershipVerifier verifier = new L2NounsOwnershipVerifier();
 
     function test() public {
-        L1StateVerifier.StateProofParameters memory t = L1StateVerifier.StateProofParameters({
-            beaconRoot: 0xfc6ed4dd4e1423ba060b307c3c1591f1ab5a006834835d34d9e81c8b9e7f07f7,
-            timestampForL2BeaconOracle: 0x00000000000000000000000000000000000000000000000000000000661d9e75,
-            executionStateRoot: 0xd90ab8f5e5aa74b70f464d103edeb4bf9dc2907b0f960495f009e28c3384ad41,
-            stateRootProof: stateRootProof,
-            storageProof: storageProof
-        });
+        string memory rootPath = vm.projectRoot();
+        string memory path = string.concat(rootPath, "/test/data.json");
+        string memory json = vm.readFile(path);
 
-        verifier.isOwner(256, 0x44d97D22B3d37d837cE4b22773aAd9d1566055D9, t);
-        // string memory rootPath = vm.projectRoot();
-        // string memory path = string.concat(rootPath, "/test/data.json");
-        // string memory json = vm.readFile(path);
-        // bytes memory raw = json.parseRaw(".data");
-        // L1StateVerifier.StateProofParameters memory keys = abi.decode(raw, (L1StateVerifier.StateProofParameters));
+        StateVerifier.StateProofParameters memory params = StateVerifier.StateProofParameters({
+            beaconRoot: json.readBytes32(".beaconRoot"),
+            beaconOracleTimestamp: uint256(json.readBytes32(".beaconOracleTimestamp")),
+            executionStateRoot: json.readBytes32(".executionStateRoot"),
+            stateRootProof: abi.decode(json.parseRaw(".stateRootProof"), (bytes32[])),
+            storageProof: abi.decode(json.parseRaw(".storageProof"), (bytes[]))
+        });
+        verifier.isOwner(256, 0x44d97D22B3d37d837cE4b22773aAd9d1566055D9, params);
+        console2.logBytes32(MerkleTree.computeRoot(params.stateRootProof));
     }
 }

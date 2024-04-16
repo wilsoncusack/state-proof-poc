@@ -7,3 +7,6 @@
 [submodule "onchain/lib/openzeppelin-contracts"]
 	path = onchain/lib/openzeppelin-contracts
 	url = https://github.com/openzeppelin/openzeppelin-contracts
+[submodule "onchain/lib/relic-contracts"]
+	path = onchain/lib/relic-contracts
+	url = https://github.com/relic-protocol/relic-contracts

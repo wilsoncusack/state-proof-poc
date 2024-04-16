@@ -28,7 +28,7 @@ const storageProof = await l1Client.getProof({
 
 const proofObj = {
   beaconRoot: beaconInfo.beaconRoot,
-  timestampForL2BeaconOracle: toHex(beaconInfo.timestampForL2BeaconOracle, {size: 32}),
+  beaconOracleTimestamp: toHex(beaconInfo.timestampForL2BeaconOracle, {size: 32}),
   executionStateRoot: stateRootInclusion.leaf,
   stateRootProof: stateRootInclusion.proof,
   storageProof: storageProof.storageProof[0].proof
