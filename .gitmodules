@@ -1,0 +1,9 @@
+[submodule "onchain/lib/forge-std"]
+	path = onchain/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "onchain/lib/optimism"]
+	path = onchain/lib/optimism
+	url = https://github.com/ethereum-optimism/optimism
+[submodule "onchain/lib/openzeppelin-contracts"]
+	path = onchain/lib/openzeppelin-contracts
+	url = https://github.com/openzeppelin/openzeppelin-contracts

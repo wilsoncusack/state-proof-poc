@@ -1,0 +1,16 @@
+{
+  "name": "l1-proof-poc",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@chainsafe/ssz": "^0.15.1",
+    "@lodestar/types": "^1.17.0",
+    "viem": "^2.9.16"
+  }
+}
