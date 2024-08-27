@@ -1,12 +1,14 @@
 const { ssz } = await import('@lodestar/types');
 const { SignedBeaconBlock } = ssz.deneb;
 
-const BEACON_API_URL = process.env.node || '';
+const BEACON_API_URL = process.env.NODE || '';
 const headers = {
     "Accept": "application/octet-stream",
 }
 
 export async function getBeaconBlock(tag: string) {
+  console.log('log', BEACON_API_URL)
+  console.log("!!!")
   const resp = await fetch(
       `${BEACON_API_URL}/eth/v2/beacon/blocks/${tag}`,
       { headers }
