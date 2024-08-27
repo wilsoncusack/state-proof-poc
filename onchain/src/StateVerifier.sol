@@ -38,6 +38,8 @@ library StateVerifier {
         _checkValidBeaconRoot(proofParams.beaconRoot, proofParams.beaconOracleTimestamp);
         _checkValidStateRoot(proofParams.beaconRoot, proofParams.executionStateRoot, proofParams.stateRootProof);
 
+        console2.log('account');
+        console2.log(account);
         // Verify account state
         bytes memory accountKey = abi.encodePacked(keccak256(abi.encodePacked(account)));
         bytes memory encodedAccount = _verifyAccountProof(accountKey, proofParams.accountProof, proofParams.executionStateRoot);
@@ -45,8 +47,10 @@ library StateVerifier {
         // Extract storage root from account data
         bytes32 storageRoot = _extractStorageRoot(encodedAccount);
         console2.log('YYYY');
+        console2.logBytes(storageKey);
         console2.logBytes32(storageRoot);
         console2.logBytes(abi.encodePacked(storageRoot));
+        console2.logBytes32(storageRoot);
         bytes memory x = SecureMerkleTrie.get(storageKey, proofParams.storageProof, storageRoot);
         console2.log('xxxxxx');
         console2.logBytes(x);
@@ -111,7 +115,7 @@ library StateVerifier {
         bytes[] memory storageProof
     ) private pure returns (bool) {
 
-        bool isValid = MerkleTrie.verifyInclusionProof({
+        bool isValid = SecureMerkleTrie.verifyInclusionProof({
             _key: storageKey,
             _value: storageValue,
             _proof: storageProof,
