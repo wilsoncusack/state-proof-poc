@@ -10,12 +10,10 @@ contract L2NounsOwnershipVerifier {
         view
         returns (bool)
     {
-        console2.log("hi");
-        console2.logBytes32(_getKey(tokenId));
         return StateVerifier.validateState({
             account: 0x9C8fF314C9Bc7F6e59A9d9225Fb22946427eDC03,
-            storageKey: abi.encode(_getKey(tokenId)),
-            storageValue: abi.encode(account),
+            storageKey: abi.encodePacked(_getKey(tokenId)),
+            storageValue: abi.encodePacked(account),
             proofParams: proofParams
         });
     }

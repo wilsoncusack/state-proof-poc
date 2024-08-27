@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {RLPReader} from "Solidity-RLP/RLPReader.sol";
+import {RLPReader} from "optimism/packages/contracts-bedrock/src/libraries/rlp/RLPReader.sol";
 import {MerkleTrie} from "optimism/packages/contracts-bedrock/src/libraries/trie/MerkleTrie.sol";
 import {SecureMerkleTrie} from "optimism/packages/contracts-bedrock/src/libraries/trie/SecureMerkleTrie.sol";
 import {SSZ} from "eip-4788-proof/SSZ.sol";
-import {console2} from "forge-std/Test.sol";
 
 library StateVerifier {
     using RLPReader for RLPReader.RLPItem;
@@ -38,30 +37,20 @@ library StateVerifier {
         _checkValidBeaconRoot(proofParams.beaconRoot, proofParams.beaconOracleTimestamp);
         _checkValidStateRoot(proofParams.beaconRoot, proofParams.executionStateRoot, proofParams.stateRootProof);
 
-        console2.log('account');
-        console2.log(account);
         // Verify account state
         bytes memory accountKey = abi.encodePacked(keccak256(abi.encodePacked(account)));
-        bytes memory encodedAccount = _verifyAccountProof(accountKey, proofParams.accountProof, proofParams.executionStateRoot);
-        
+        bytes memory encodedAccount =
+            _verifyAccountProof(accountKey, proofParams.accountProof, proofParams.executionStateRoot);
+
         // Extract storage root from account data
         bytes32 storageRoot = _extractStorageRoot(encodedAccount);
-        console2.log('YYYY');
-        console2.logBytes(storageKey);
-        console2.logBytes32(storageRoot);
-        console2.logBytes(abi.encodePacked(storageRoot));
-        console2.logBytes32(storageRoot);
-        bytes memory x = SecureMerkleTrie.get(storageKey, proofParams.storageProof, storageRoot);
-        console2.log('xxxxxx');
-        console2.logBytes(x);
 
-        // Verify storage proof
         return _verifyStorageProof({
-            storageKey: storageKey, 
-            storageValue: storageValue, 
-            storageRoot: storageRoot, 
+            storageKey: storageKey,
+            expectedStorageValue: storageValue,
+            storageRoot: storageRoot,
             storageProof: proofParams.storageProof
-    });
+        });
     }
 
     function _checkValidBeaconRoot(bytes32 root, uint256 timestamp) private view {
@@ -81,18 +70,14 @@ library StateVerifier {
         private
         view
     {
-        console2.logUint(STATE_ROOT_GINDEX);
-        console2.logBytes32(beaconRoot);
-        console2.logBytes32(executionStateRoot);
-
         if (!SSZ.verifyProof({proof: proof, root: beaconRoot, leaf: executionStateRoot, index: STATE_ROOT_GINDEX})) {
             revert ExecutionStateRootMerkleProofFailed();
         }
     }
 
-    function _verifyAccountProof(bytes memory accountKey, bytes[] memory accountProof, bytes32 stateRoot) 
-        private 
-        pure 
+    function _verifyAccountProof(bytes memory accountKey, bytes[] memory accountProof, bytes32 stateRoot)
+        private
+        pure
         returns (bytes memory)
     {
         bytes memory encodedAccount = MerkleTrie.get(accountKey, accountProof, stateRoot);
@@ -103,24 +88,21 @@ library StateVerifier {
     }
 
     function _extractStorageRoot(bytes memory encodedAccount) private pure returns (bytes32) {
-        RLPReader.RLPItem[] memory accountFields = encodedAccount.toRlpItem().toList();
+        RLPReader.RLPItem[] memory accountFields = encodedAccount.readList();
         require(accountFields.length == 4, "Invalid account RLP");
-        return bytes32(accountFields[2].toUint()); // storage root is the third field
+        return bytes32(RLPReader.readBytes(accountFields[2])); // storage root is the third field
     }
 
     function _verifyStorageProof(
         bytes memory storageKey,
-        bytes memory storageValue,
+        bytes memory expectedStorageValue,
         bytes32 storageRoot,
         bytes[] memory storageProof
     ) private pure returns (bool) {
+        bytes memory rlpValue = SecureMerkleTrie.get({_key: storageKey, _proof: storageProof, _root: storageRoot});
+        bytes memory value = RLPReader.readBytes(rlpValue);
 
-        bool isValid = SecureMerkleTrie.verifyInclusionProof({
-            _key: storageKey,
-            _value: storageValue,
-            _proof: storageProof,
-            _root: storageRoot
-        });
+        bool isValid = keccak256(value) == keccak256(expectedStorageValue);
 
         if (!isValid) {
             revert StorageProofVerificationFailed();

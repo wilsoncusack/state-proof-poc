@@ -26,14 +26,16 @@ const storageProof = await l1Client.getProof({
   storageKeys: [slot],
   blockNumber: BigInt(block.body.executionPayload.blockNumber)
 })
+console.log('slot', slot)
+// for (const proof of storageProof.storageProof[0].proof) {
+//   console.log(1)
+//   console.log(fromRlp(proof))
+// }
 
-for (const proof of storageProof.storageProof[0].proof) {
-  console.log(1)
-  console.log(fromRlp(proof))
-}
+// console.log(BigInt(block.body.executionPayload.blockNumber))
+// console.log('storageProof', storageProof)
 
-console.log(BigInt(block.body.executionPayload.blockNumber))
-console.log('storageProof', storageProof)
+console.log(fromRlp("0x94b1a32fc9f9d8b2cf86c068cae13108809547ef71"))
 
 const proofObj = {
   beaconRoot: beaconInfo.beaconRoot,

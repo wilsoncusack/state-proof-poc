@@ -11,10 +11,8 @@ import {MerkleTree} from "relic-contracts/lib/MerkleTree.sol";
 contract L2NounsOwnershipVerifierTest is Test {
     using stdJson for string;
 
-    
-
     function test() public {
-        vm.createSelectFork("https://mainnet.base.org");
+        vm.createSelectFork("https://mainnet.base.org", 18997612);
         L2NounsOwnershipVerifier verifier = new L2NounsOwnershipVerifier();
         string memory rootPath = vm.projectRoot();
         string memory path = string.concat(rootPath, "/test/data.json");
@@ -28,7 +26,6 @@ contract L2NounsOwnershipVerifierTest is Test {
             storageProof: abi.decode(json.parseRaw(".storageProof"), (bytes[])),
             accountProof: abi.decode(json.parseRaw(".accountProof"), (bytes[]))
         });
-        verifier.isOwner(256, 0xb1a32FC9F9D8b2cf86C068Cae13108809547ef71, params);
-        console2.logBytes32(MerkleTree.computeRoot(params.stateRootProof));
+        assertTrue(verifier.isOwner(256, 0xb1a32FC9F9D8b2cf86C068Cae13108809547ef71, params));
     }
 }
