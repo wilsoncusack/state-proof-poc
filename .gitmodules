@@ -10,3 +10,9 @@
 [submodule "onchain/lib/relic-contracts"]
 	path = onchain/lib/relic-contracts
 	url = https://github.com/relic-protocol/relic-contracts
+[submodule "onchain/lib/eip-4788-proof"]
+	path = onchain/lib/eip-4788-proof
+	url = https://github.com/madlabman/eip-4788-proof
+[submodule "onchain/lib/Solidity-RLP"]
+	path = onchain/lib/Solidity-RLP
+	url = https://github.com/hamdiallam/Solidity-RLP

@@ -1,51 +1,63 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {RLPReader} from "Solidity-RLP/RLPReader.sol";
 import {MerkleTrie} from "optimism/packages/contracts-bedrock/src/libraries/trie/MerkleTrie.sol";
-import {MerkleProof} from "openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol";
-import {MerkleTree} from "relic-contracts/lib/MerkleTree.sol";
+import {SecureMerkleTrie} from "optimism/packages/contracts-bedrock/src/libraries/trie/SecureMerkleTrie.sol";
+import {SSZ} from "eip-4788-proof/SSZ.sol";
+import {console2} from "forge-std/Test.sol";
 
 library StateVerifier {
+    using RLPReader for RLPReader.RLPItem;
+    using RLPReader for bytes;
+
     address private constant BEACON_ROOTS_ORACLE = 0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02;
+    uint256 private constant STATE_ROOT_GINDEX = 6434;
 
     struct StateProofParameters {
-        // The root of the L1 beacon block being used for the proof.
         bytes32 beaconRoot;
-        // The timestamp that can be passed to the beacon oracle, should return `beaconRoot`.
         uint256 beaconOracleTimestamp;
-        // block.body.executionPayload.stateRoot of the beacon block.
         bytes32 executionStateRoot;
-        // Proof that executionStateRoot is a leaf in the merkle tree for which beaconRoot is the root.
         bytes32[] stateRootProof;
-        // The storage proof to be used with executionStateRoot.
+        bytes[] accountProof;
         bytes[] storageProof;
     }
 
     error BeaconRootDoesNotMatch(bytes32 expected, bytes32 actual);
     error BeaconRootsOracleCallFailed(bytes callData);
     error ExecutionStateRootMerkleProofFailed();
+    error AccountProofVerificationFailed();
+    error StorageProofVerificationFailed();
 
-    /// @notice Uses the EIP-4788 Beacon Root Oracle, which on OP Stack L2 exposes L1 Beacon roots,
-    /// to validate L1 state on L2.
-    ///
-    /// @param key The storage slot at which the value is set, i.e. keccak256(abi.encode(mappingKey, slotIndex));
-    /// @param value The value at key
-    /// @param proofParams The StateProofParameters needed for this proof.
-    function validateState(bytes memory key, bytes memory value, StateProofParameters calldata proofParams)
-        internal
-        view
-        returns (bool)
-    {
+    function validateState(
+        address account,
+        bytes memory storageKey,
+        bytes memory storageValue,
+        StateProofParameters calldata proofParams
+    ) internal view returns (bool) {
         _checkValidBeaconRoot(proofParams.beaconRoot, proofParams.beaconOracleTimestamp);
-
         _checkValidStateRoot(proofParams.beaconRoot, proofParams.executionStateRoot, proofParams.stateRootProof);
 
-        return MerkleTrie.verifyInclusionProof({
-            _key: key,
-            _value: value,
-            _proof: proofParams.storageProof,
-            _root: proofParams.executionStateRoot
-        });
+        // Verify account state
+        bytes memory accountKey = abi.encodePacked(keccak256(abi.encodePacked(account)));
+        bytes memory encodedAccount = _verifyAccountProof(accountKey, proofParams.accountProof, proofParams.executionStateRoot);
+        
+        // Extract storage root from account data
+        bytes32 storageRoot = _extractStorageRoot(encodedAccount);
+        console2.log('YYYY');
+        console2.logBytes32(storageRoot);
+        console2.logBytes(abi.encodePacked(storageRoot));
+        bytes memory x = SecureMerkleTrie.get(storageKey, proofParams.storageProof, storageRoot);
+        console2.log('xxxxxx');
+        console2.logBytes(x);
+
+        // Verify storage proof
+        return _verifyStorageProof({
+            storageKey: storageKey, 
+            storageValue: storageValue, 
+            storageRoot: storageRoot, 
+            storageProof: proofParams.storageProof
+    });
     }
 
     function _checkValidBeaconRoot(bytes32 root, uint256 timestamp) private view {
@@ -65,8 +77,51 @@ library StateVerifier {
         private
         view
     {
-        if (!MerkleTree.validProof({proofHashes: proof, rootHash: beaconRoot, hash: executionStateRoot, index: 7})) {
+        console2.logUint(STATE_ROOT_GINDEX);
+        console2.logBytes32(beaconRoot);
+        console2.logBytes32(executionStateRoot);
+
+        if (!SSZ.verifyProof({proof: proof, root: beaconRoot, leaf: executionStateRoot, index: STATE_ROOT_GINDEX})) {
             revert ExecutionStateRootMerkleProofFailed();
         }
+    }
+
+    function _verifyAccountProof(bytes memory accountKey, bytes[] memory accountProof, bytes32 stateRoot) 
+        private 
+        pure 
+        returns (bytes memory)
+    {
+        bytes memory encodedAccount = MerkleTrie.get(accountKey, accountProof, stateRoot);
+        if (encodedAccount.length == 0) {
+            revert AccountProofVerificationFailed();
+        }
+        return encodedAccount;
+    }
+
+    function _extractStorageRoot(bytes memory encodedAccount) private pure returns (bytes32) {
+        RLPReader.RLPItem[] memory accountFields = encodedAccount.toRlpItem().toList();
+        require(accountFields.length == 4, "Invalid account RLP");
+        return bytes32(accountFields[2].toUint()); // storage root is the third field
+    }
+
+    function _verifyStorageProof(
+        bytes memory storageKey,
+        bytes memory storageValue,
+        bytes32 storageRoot,
+        bytes[] memory storageProof
+    ) private pure returns (bool) {
+
+        bool isValid = MerkleTrie.verifyInclusionProof({
+            _key: storageKey,
+            _value: storageValue,
+            _proof: storageProof,
+            _root: storageRoot
+        });
+
+        if (!isValid) {
+            revert StorageProofVerificationFailed();
+        }
+
+        return true;
     }
 }
